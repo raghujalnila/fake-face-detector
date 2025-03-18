@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real or Fake Face Classifier</title>
+
+    <!-- Google Font: Orbitron -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* General Styles */
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            background: url('static/background.jpg') no-repeat center center fixed;
+            background-size: cover;
+            color: white;
+        }
+
+        /* Overlay */
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: -1;
+        }
+
+        /* Header Bar */
+        .header-bar {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 50px;
+            background: black;
+            padding: 20px 0;
+            text-align: center;
+            text-transform: uppercase;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.8);
+            text-shadow: 2px 2px 10px rgba(0, 255, 255, 0.5);
+            letter-spacing: 3px;
+            width: 100%;
+        }
+
+        /* Upload Section */
+        #upload-section {
+            width: 250px;
+            height: 250px;
+            border: 3px dashed cyan;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            background: rgba(0, 0, 0, 0.5);
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+            transition: 0.3s;
+            margin: 20px auto;
+            position: relative;
+            color: white;
+        }
+
+        #upload-section:hover {
+            background: rgba(0, 255, 255, 0.2);
+        }
+
+        /* Image Preview */
+        #preview {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        /* Loading Bar */
+        .loading-container {
+            width: 100%;
+            height: 5px;
+            background: rgba(0, 255, 255, 0.3);
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            display: none;
+        }
+
+        .loading-bar {
+            height: 5px;
+            width: 0%;
+            background: cyan;
+            transition: width 1s linear;
+        }
+
+        /* Buttons */
+        button {
+            background: cyan;
+            color: black;
+            font-size: 18px;
+            font-family: 'Orbitron', sans-serif;
+            padding: 10px 20px;
+            border: none;
+            margin: 10px;
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.8);
+            transition: 0.3s;
+        }
+
+        button:hover {
+            background: darkcyan;
+            box-shadow: 0 0 25px rgba(0, 255, 255, 1);
+        }
+
+        /* Clear Button */
+        #clear-button {
+            background: gray;
+            font-size: 16px;
+            padding: 10px 20px;
+        }
+
+        #clear-button:hover {
+            background: darkgray;
+        }
+
+        /* Result */
+        #result {
+            font-size: 22px;
+            font-weight: bold;
+            font-family: 'Orbitron', sans-serif;
+            margin-top: 20px;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.7);
+        }
+    </style>
+</head>
+<body>
+    <div class="overlay"></div>
+
+    <!-- Header -->
+    <div class="header-bar">Upload a Face Image</div>
+
+    <!-- Upload Section -->
+    <div id="upload-section" onclick="document.getElementById('file-input').click();">
+        Click to Upload Image
+        <img id="preview" src="#" alt="">
+        <div class="loading-container">
+            <div class="loading-bar" id="loading-bar"></div>
+        </div>
+    </div>
+
+    <input type="file" id="file-input" style="display: none;" accept="image/*" onchange="previewImage(event)">
+    
+    <!-- Buttons -->
+    <button onclick="classifyImage()">Classify</button>
+    <button id="clear-button" onclick="clearImage()">Clear</button>
+
+    <p id="result"></p>
+
+    <!-- JavaScript -->
+    <script>
+        function previewImage(event) {
+            const reader = new FileReader();
+            const loadingBar = document.getElementById("loading-bar");
+            const loadingContainer = document.querySelector(".loading-container");
+            const preview = document.getElementById("preview");
+
+            // Show loading bar
+            loadingContainer.style.display = "block";
+            loadingBar.style.width = "0%";
+
+            setTimeout(() => {
+                loadingBar.style.width = "100%";
+            }, 100);
+
+            reader.onload = function() {
+                setTimeout(() => {
+                    preview.src = reader.result;
+                    preview.style.display = "block";
+                    loadingContainer.style.display = "none"; // Hide loading bar
+                }, 1000); // Simulating loading time
+            };
+
+            reader.readAsDataURL(event.target.files[0]);
+        }
+
+        function classifyImage() {
+            const fileInput = document.getElementById('file-input');
+            if (fileInput.files.length === 0) {
+                alert("Please upload an image first.");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("file", fileInput.files[0]);
+
+            fetch("/predict", {
+                method: "POST",
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('result').innerText = "Prediction: " + data.prediction;
+            })
+            .catch(error => console.error("Error:", error));
+        }
+
+        function clearImage() {
+            document.getElementById('file-input').value = "";
+            document.getElementById('preview').style.display = "none";
+            document.getElementById('result').innerText = "";
+        }
+    </script>
+</body>
+</html>
